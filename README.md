@@ -1,338 +1,142 @@
-# AI_Platform
+# Knowledge Hub
 
-企業內部知識問答與自動化執行平台。系統將文件匯入、Hybrid Retrieval、LLM 回答、權限控管、使用者回饋與 Python 自動化整合在同一套 Web 應用中，目標不是只做聊天介面，而是建立一條可追溯、可管理、可部署的企業 AI 工作流程。
+企業知識問答與自動化執行平台。這個 Side Project 將文件匯入、可追溯 RAG、權限治理、使用者回饋與 Python 自動化整合成一套完整的企業 AI 應用流程。
 
-> 本儲存庫為作品展示與技術實作。畫面、測試帳號與範例資料皆應使用虛構或去識別化內容；請勿提交公司內部文件、API Key、`.env`、SQLite 資料庫或備份檔。
+> **作品聲明**
+>
+> 本專案由我在非工作時間獨立設計與開發，用於展示 AI Application Engineering、RAG／LLM 整合與系統工程能力。專案未使用、複製或揭露任職公司的原始碼、內部文件、資料、帳號、系統設定或其他機密資訊；畫面與資料均為自行建立的模擬內容。
+>
+> 基於資訊安全與智慧財產權考量，公開版本僅呈現經過整理的功能畫面、技術概念與操作成果，不提供完整原始碼、目錄結構、環境設定、部署密鑰及可直接重建正式環境的細節。
 
-## 專案重點
+## 專案要解決的問題
 
-- **企業級知識匯入**：支援 PPTX、XLS/XLSX、CSV、TSV、JSON，可先預覽、調整欄位，再批次寫入指定問答專區。
-- **可追溯 RAG**：同時檢索本文、已確認的相關問題與 BM25 關鍵字結果，顯示 Top 5、相似度與來源檔案。
-- **多階段排序**：向量檢索與 BM25 融合後，可依序使用 ColBERT late interaction 與 CrossEncoder reranker。
-- **三階段回饋流程**：初次回答 → LLM 改寫後重查 → 已確認相關問題建議；仍無法解決時進入後台未解決問題清單。
-- **AI 引導自動化**：LLM 只負責理解需求與推薦已授權程式，系統再以 `【程式名稱】` 契約接管確認、參數、檔案上傳與執行流程。
-- **權限與治理**：本地帳號、AD/LDAP、角色、群組、專區權限、操作紀錄、問答分析、備份與還原。
-- **本地與容器部署**：React production build 由 FastAPI 同站提供；可使用 Dockerfile，或在既有 Linux 容器內一次安裝與啟動。
+企業導入生成式 AI 時，不只需要聊天介面，還必須處理文件維護、答案來源、存取權限、錯誤回饋、人工治理及既有工作流程整合。
 
-## 系統架構
+Knowledge Hub 將需求整理成兩條主要流程：
+
+```text
+企業文件 → 解析與確認 → Hybrid Retrieval → 可追溯回答
+       → 使用者回饋 → 人工治理 → 知識持續改善
+
+自然語言需求 → AI 推薦已授權自動化 → 系統確認與收集輸入
+             → 執行 Python 程式 → 結果下載與紀錄
+```
+
+## 核心能力
+
+- **企業知識匯入**：支援試算表、簡報及結構化檔案，寫入前可預覽、調整欄位與排除資料。
+- **Hybrid Retrieval**：結合向量語意檢索、BM25 關鍵字檢索、候選融合與可配置 Reranker。
+- **答案可追溯**：保留 Top 5 候選、相似度與來源，讓使用者能查證回答依據。
+- **三階段回饋機制**：初次回答、問題改寫重查、已確認相關問題推薦；仍無法解決時轉入人工處理。
+- **權限治理**：支援本地帳號、AD／LDAP、角色、群組及問答專區權限。
+- **AI 引導自動化**：AI 負責理解需求與推薦已授權程式，真正的確認、參數收集、檔案處理及執行由確定性程式流程接管。
+- **管理與稽核**：提供問答分析、未解決問題處理及成功自動化執行紀錄。
+
+## 功能展示
+
+### 1. 登入與帳號治理
+
+平台提供統一登入入口；管理者可管理本地帳號，並整合 AD／LDAP 驗證及權限配置。
+
+![Knowledge Hub 登入畫面](docs/images/01-login.jpg)
+
+![本地帳號與 AD LDAP 管理](docs/images/02-account-and-ldap.jpg)
+
+### 2. 文件處理與寫入前確認
+
+管理者可批次匯入資料，在寫入知識庫前完成欄位對應、內容預覽與人工修正，降低錯誤資料直接進入檢索系統的風險。
+
+![單筆建立與批次文件匯入](docs/images/03-document-import.jpg)
+
+![匯入資料欄位對應與預覽](docs/images/04-import-preview.jpg)
+
+### 3. 模型與檢索設定
+
+不同問答專區可設定是否使用 LLM 生成回答；檢索流程支援語意搜尋、BM25、候選融合與 Reranker，並保留最終候選供使用者查證。
+
+![對話專區模型設定](docs/images/05-model-settings.jpg)
+
+![Hybrid Retrieval 與 Reranker 設定](docs/images/06-hybrid-retrieval.jpg)
+
+### 4. 可追溯問答與三階段改善
+
+使用者可以展開檢視匹配文本、來源與相似度。當結果無幫助時，系統依序執行問題改寫與已確認相關問題推薦；第三階段仍無法處理的問題會交由管理者治理。
+
+![回答來源、Top 5 與使用者回饋](docs/images/07-rag-result.jpg)
+
+![LLM 改寫問題並重新檢索](docs/images/08-query-rewrite.jpg)
+
+![已確認相關問題建議](docs/images/09-related-questions.jpg)
+
+![未解決問題人工處理](docs/images/10-unresolved-questions.jpg)
+
+![問答分析儀表板與紀錄](docs/images/11-qa-analytics.jpg)
+
+### 5. AI 引導與指定執行自動化
+
+AI 只能依據使用者已獲授權且目前開放的自動化清單提出建議。使用者確認後，平台才進入參數或檔案收集流程並執行程式，避免讓模型直接控制後端行為。
+
+![AI 推薦並引導執行訂單資料匯出](docs/images/12-ai-guided-automation.jpg)
+
+使用者也可以指定程式，將前一步產出的 Excel 交給下一支分析自動化，形成可操作的資料處理流程。
+
+![指定自動化、上傳檔案與產出統計結果](docs/images/13-file-automation.jpg)
+
+### 6. 自動化執行紀錄
+
+後台只記錄成功完成的工作，供管理者追蹤使用者、程式及輸出結果。
+
+![自動化執行紀錄](docs/images/14-automation-logs.jpg)
+
+## 高階系統架構
 
 ```mermaid
 flowchart LR
-    U[使用者 / 管理員] --> UI[React + TypeScript]
-    UI --> API[FastAPI]
+    U[使用者 / 管理員] --> WEB[Web Platform]
+    WEB --> AUTH[Identity & Access Control]
+    WEB --> DATA[Document Processing]
+    WEB --> AUTO[Automation Engine]
 
-    API --> AUTH[本地帳號 / AD LDAP / RBAC]
-    API --> DB[(SQLite)]
-    API --> DOC[文件解析與預覽]
-    API --> AUTO[Automation Runner]
+    DATA --> KB[(Knowledge Base)]
+    KB --> RETRIEVE[Hybrid Retrieval & Reranking]
+    RETRIEVE --> LLM[LLM Response Layer]
+    LLM --> WEB
 
-    DOC --> DB
-    DB --> IDX[LlamaIndex 雙索引<br/>本文 + 已確認相關問題]
-    IDX --> HYBRID[Vector Search + BM25 + RRF]
-    HYBRID --> COLBERT[ColBERT 可選]
-    COLBERT --> CROSS[CrossEncoder 可選]
-    CROSS --> TOPK[Top K + 來源追溯]
-    TOPK --> LLM[OpenAI-compatible API / Ollama]
-    LLM --> UI
-
-    AUTO --> ENV[隔離 Python venv]
-    ENV --> FILES[上傳檔與輸出檔]
+    AUTO --> SAFE[Controlled Execution Flow]
+    SAFE --> RESULT[Downloadable Results & Audit Log]
 ```
 
-### RAG 查詢流程
-
-1. 使用者只可查詢已授權的對話專區。
-2. 系統分別查詢「本文向量」與「已確認相關問題向量」。
-3. BM25 對資料名稱、本文與相關問題進行關鍵字檢索。
-4. 將多路結果以語意分數、BM25、Reciprocal Rank Fusion 與多路命中加權合併。
-5. 視後台設定使用 ColBERT、CrossEncoder 進行重排，最後保留 Top 5。
-6. 未啟用 LLM 時，回答只使用 Rank 1 本文；啟用 LLM 時，以檢索內容生成回答，但仍保留來源與候選結果供查證。
-
-預設 Embedding 為 [`iampanda/zpoint_large_embedding_zh`](https://huggingface.co/iampanda/zpoint_large_embedding_zh)。Reranker 採延遲載入，第一次查詢時才載入或下載。
-
-## 使用者回饋與持續改善
-
-```text
-初次檢索與回答
-  ├─ 有幫助：建立使用者問題與正確文本的對應
-  └─ 無幫助
-       ├─ LLM 已啟用：改寫問題並重新檢索
-       └─ LLM 未啟用：直接進入下一階段
-              ↓
-       顯示 5 個已確認相關問題
-              ↓
-       仍無幫助 → 建立未解決問題
-              ↓
-       管理員輸入人工回應，或關聯正確文本／相關問題
-```
-
-這個流程將「LLM 生成」與「最終知識關聯」分開：模型可協助理解與改寫，但資料寫入與正確答案確認仍由明確規則及管理者操作控制。
-
-## 自動化執行設計
-
-管理員可將 Python 自動化程式指派給本地或 AD 使用者，並控制是否開放、使用哪一個隔離環境。程式透過 `context` 取得執行資訊：
-
-- `context.user_id`：登入使用者識別。
-- `context.parameters`：依程式宣告收集的參數。
-- `context.files`：使用者已上傳檔案的伺服器路徑。
-- `context.output_dir`：該使用者與程式的輸出目錄。
-
-AI 引導模式中，LLM 只能看到目前使用者已被指派且已開放的自動化清單。當回覆出現有效的 `【程式名稱】`，前端狀態流程才接管執行：
-
-```text
-自然語言需求 → LLM 推薦【程式名稱】 → 使用者確認
-             → 收集參數／檔案 → 隔離環境執行 → 提供下載連結
-```
-
-使用者也可以直接輸入 `【程式名稱】` 執行。只有成功完成的工作才會寫入自動化執行紀錄。上傳暫存檔與輸出檔可設定保留天數，後端會定期清理。
-
-> 自動化 Python 環境提供套件隔離，但不是作業系統安全沙箱。正式環境仍應限制可登錄程式的人員、容器權限、網路範圍與可掛載目錄。
-
-## 主要功能
-
-| 模組 | 已實作功能 |
-| --- | --- |
-| 帳號與權限 | 本地帳號、AD/LDAP 額外驗證、角色、群組、專區成員與管理者 |
-| 文件處理 | 單筆建立、批次拖曳、欄位對應、預覽修改、來源檔名記錄 |
-| PPTX | 略過封面、依投影片標題與內容建構資料、同題合併、完整投影片圖片關聯 |
-| 知識問答 | Hybrid Retrieval、Top 5、來源追溯、LLM／非 LLM 回答模式 |
-| 檢索設定 | BM25、候選數量、ColBERT、CrossEncoder、測試檢索管線 |
-| 品質回饋 | 有幫助關聯、問題改寫、相關問題建議、候選關聯審核 |
-| 管理流程 | 未解決問題、人工回應、正確文本／問題關聯 |
-| 分析治理 | 問答儀表板、查詢紀錄、篩選、匯出與刪除 |
-| 自動化 | AI 推薦、指定執行、動態參數、檔案輸入、結果下載、執行紀錄 |
-| 平台管理 | 品牌與外觀、Embedding 模型管理、資料備份／還原、系統初始化 |
+架構刻意將 LLM 與最終系統動作分離：模型協助理解、改寫與生成文字，權限判斷、知識關聯及自動化執行則由後端規則控制。
 
 ## 技術棧
 
-| 分層 | 技術 |
+| 分層 | 主要技術 |
 | --- | --- |
-| Frontend | React、TypeScript、Vite、React Markdown、GFM |
-| Backend | Python 3.11、FastAPI、Uvicorn、Pydantic、SQLAlchemy |
-| Database | SQLite |
-| RAG | LlamaIndex、Sentence Transformers、BM25、自訂融合排序 |
-| Models | Hugging Face Embedding、ColBERT、CrossEncoder、OpenAI-compatible API、Ollama |
-| Identity | HMAC 簽章登入 Token、本地帳號、ldap3、RBAC |
-| Documents | openpyxl、xlrd、python-pptx、PowerPoint COM（Windows）、LibreOffice/Poppler（Linux） |
-| Deployment | Docker multi-stage build、Conda 安裝腳本、FastAPI 靜態前端託管 |
+| Frontend | React、TypeScript、Vite |
+| Backend | Python、FastAPI、SQLAlchemy |
+| Data | SQLite、文件解析與索引管理 |
+| AI / RAG | LlamaIndex、Sentence Transformers、BM25、Hybrid Retrieval、Reranker |
+| Model Integration | Hugging Face、OpenAI-compatible API、Ollama |
+| Identity | 本地帳號、AD／LDAP、RBAC |
+| Automation | Python 程式、動態參數、檔案輸入、隔離執行環境 |
+| Deployment | Linux／Docker 導向的部署設計 |
 
-## Demo 建議流程
+## 個人實作重點
 
-此專案適合用以下故事線展示，而不是逐頁介紹 CRUD：
+- 將文件處理、RAG、LLM、權限與自動化整合成完整 Web 平台，而非單一聊天範例。
+- 設計多路檢索、融合排序、Reranker 與可追溯來源呈現。
+- 將使用者回饋、問題改寫、相關問題及人工處理串成知識治理閉環。
+- 以明確狀態與規則接管自動化執行，避免由 LLM 直接決定系統操作。
+- 處理帳號權限、檔案生命週期、操作紀錄與企業內部部署等工程議題。
 
-1. 登入、帳號管理與 AD/LDAP 權限設計。
-2. 匯入測試文件，展示欄位辨識、預覽與寫入。
-3. 展示 LLM 設定、BM25 + Vector Search + Reranker 管線。
-4. 實際問答，呈現來源、Top 5 與三階段無幫助流程。
-5. 在後台處理未解決問題，查看問答儀表板與紀錄。
-6. 以自然語言讓 AI 推薦自動化，完成訂單資料匯出。
-7. 直接指定另一支自動化，上傳前一步結果並產生統計表。
-8. 查看只記錄成功工作的自動化執行紀錄。
+## 公開範圍
 
-## 專案結構
+此 GitHub 頁面用於求職作品展示，刻意省略：
 
-```text
-.
-├─ backend/
-│  ├─ app/
-│  │  ├─ main.py                 # API、權限檢查與應用生命週期
-│  │  ├─ models.py               # SQLAlchemy 資料模型
-│  │  ├─ schemas.py              # API schema
-│  │  └─ services/
-│  │     ├─ retrieval.py         # 雙索引、BM25、融合與 reranker
-│  │     ├─ llm.py               # 問答、改寫與自動化推薦
-│  │     ├─ pptx_import.py       # PowerPoint 解析與整頁圖片
-│  │     ├─ automation_runner.py # 自動化載入與執行
-│  │     └─ backup.py            # 備份與還原
-│  ├─ data/                      # 執行資料；不應提交 Git
-│  ├─ models/                    # 本地模型；不應提交 Git
-│  ├─ .env.example
-│  ├─ requirements.txt
-│  └─ run.py
-├─ frontend/
-│  └─ src/
-│     ├─ App.tsx                 # 平台與後台頁面
-│     └─ AutomationWorkspace.tsx # 自動化對話與狀態流程
-├─ Dockerfile
-├─ install-and-start.sh
-└─ start.sh
-```
+- 完整原始碼與專案目錄結構
+- 資料庫 schema、內部 API 路由及驗證實作細節
+- 環境變數、模型端點、金鑰與正式部署參數
+- 自動化程式儲存方式、伺服器路徑及執行環境細節
+- 真實公司文件、帳號、網路資訊及任何工作期間成果
 
-## 快速開始
-
-### 1. 建立設定檔
-
-```powershell
-Copy-Item backend\.env.example backend\.env
-```
-
-至少填寫：
-
-```dotenv
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=請設定至少12字元的高強度密碼
-AUTH_SECRET=請設定至少32字元的隨機密鑰
-FRONTEND_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-APP_HOST=0.0.0.0
-APP_PORT=8000
-```
-
-PowerShell 可用以下方式產生隨機密鑰：
-
-```powershell
-[Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(48))
-```
-
-### 2. 本機開發
-
-後端：
-
-```powershell
-cd backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-uvicorn app.main:app --reload --reload-dir app --host 127.0.0.1 --port 8000
-```
-
-前端（另一個終端）：
-
-```powershell
-cd frontend
-npm ci
-npm run dev
-```
-
-`npm run dev` 只供開發。Vite 會讀取 `backend/.env` 中的前端相關設定。
-
-### 3. Production build 驗證
-
-```powershell
-cd frontend
-npm run build
-npm run preview -- --host 0.0.0.0 --port 3000
-```
-
-`npm run preview` 只用於驗收建置結果，不是正式服務。正式模式由 FastAPI 同時提供 API 與 `frontend/dist`。
-
-```powershell
-cd backend
-python run.py
-```
-
-### 4. 測試
-
-```powershell
-cd backend
-python -m pytest -q
-```
-
-## Docker 部署
-
-不需要 Docker Compose。
-
-```powershell
-docker build -t knowledge-hub .
-docker run -d --name knowledge-hub --restart unless-stopped `
-  --env-file backend/.env `
-  -e APP_HOST=0.0.0.0 `
-  -e APP_PORT=3000 `
-  -p 3000:3000 `
-  -v knowledge-hub-data:/app/backend/data `
-  -v knowledge-hub-models:/app/backend/models `
-  knowledge-hub
-```
-
-Dockerfile 使用 Node 22 建置前端，再以 Python 3.11 slim image 執行 FastAPI；正式 image 不需要 Node.js 或 Nginx runtime。
-
-上面的 `-e APP_PORT=3000` 會覆寫本機開發用 `.env` 內可能存在的 `APP_PORT=8000`，使容器內服務與 `-p 3000:3000` 保持一致。
-
-建議持久化：
-
-- `/app/backend/data`：SQLite、向量索引、知識圖片、品牌素材、備份與自動化資料。
-- `/app/backend/models`：Embedding 與 reranker 模型。
-
-正式環境應在容器前方使用反向代理或 Load Balancer 終止 HTTPS，再轉送至平台 port。`FRONTEND_ORIGINS` 必須使用實際 HTTPS 網址。
-
-## 在既有 Linux 容器內一鍵安裝
-
-若容器由使用者自行建立，可先安裝 Miniconda 以及文件處理需要的系統套件：
-
-```bash
-apt-get update && apt-get install -y libreoffice-impress poppler-utils fonts-noto-cjk
-cd /app
-chmod +x install-and-start.sh
-./install-and-start.sh
-```
-
-腳本會建立 `knowledge-hub` Conda 環境、安裝 Python 3.11/Node.js 22、安裝前後端套件、建置前端並啟動平台。已完成安裝與 build 後，可直接使用：
-
-```bash
-./start.sh
-```
-
-## 檢索與模型設定
-
-預設值可在 `.env` 設定，啟動後也可由超級管理員在後台調整：
-
-```dotenv
-RETRIEVAL_BM25_ENABLED=true
-RETRIEVAL_CANDIDATE_POOL=50
-COLBERT_RERANKER_ENABLED=true
-COLBERT_RERANKER_MODEL=jinaai/jina-colbert-v2
-COLBERT_RERANKER_TOP_N=20
-CROSS_ENCODER_RERANKER_ENABLED=false
-CROSS_ENCODER_RERANKER_MODEL=BAAI/bge-reranker-v2-m3
-CROSS_ENCODER_RERANKER_TOP_N=10
-```
-
-處理順序：
-
-```text
-本文向量 + 相關問題向量 + BM25
-→ 融合候選
-→ ColBERT Top N（可選）
-→ CrossEncoder Top N（可選）
-→ Top 5
-```
-
-兩個 reranker 同時啟用可能提升排序品質，但也會增加 CPU/GPU 延遲與記憶體需求。正式部署前應以自己的測試集評估，不應只依預設值決定。
-
-模型授權需個別確認：`jinaai/jina-colbert-v2` 目前設定適合測試與研究用途，商業交付前必須重新審查其授權；`BAAI/bge-reranker-v2-m3` 採 Apache-2.0。
-
-## 資料與備份
-
-本機預設的重要路徑：
-
-- SQLite：`backend/knowledge_platform.db`
-- 向量索引：`backend/llamaindex_storage`
-- 知識圖片：`backend/data/knowledge-assets`
-- 自動化程式：`backend/data/automations/programs`
-- 暫存上傳：`backend/data/automations/uploads`
-- 執行輸出：`backend/data/automations/outputs`
-- Embedding 模型：`backend/models/embeddings`
-- Reranker 模型：`backend/models/rerankers`
-
-平台備份包含帳號密碼雜湊、權限、設定、問答／執行紀錄與品牌素材，必須視為敏感資料並加密保存。向量索引可由 SQLite 內容重建。
-
-## 安全注意事項
-
-- 不要提交 `backend/.env`、資料庫、模型、備份、上傳檔或輸出檔。
-- 不要在 README、截圖、commit history 或 issue 中公開 API Key、Token、真實帳號與內部主機名稱。
-- 正式環境請使用 HTTPS、受信任反向代理、最小權限容器與入口層限流。
-- 啟用 AD/LDAP 時，正式環境應使用 LDAPS/SSL。
-- `FORWARDED_ALLOW_IPS` 只能設定受信任代理，不要任意使用 `*`。
-- 自動化程式具有伺服器端 Python 執行能力，只能由受信任管理者部署。
-- 預設 SQLite 適合單機部署；若未來需要多副本或高併發，應評估改用外部資料庫與共享物件儲存。
-
-## 專案定位
-
-這個專案主要展示以下 AI Application Engineering 能力：
-
-- 將 RAG、LLM 與企業權限系統整合成可操作的完整產品流程。
-- 自行設計多路檢索、融合排序、reranker 與可追溯來源呈現。
-- 以使用者回饋與管理者確認建立可持續改善的知識治理閉環。
-- 將 LLM 限制在語意理解與文字生成，並由確定性程式邏輯接管真正的自動化執行。
-- 處理文件匯入、模型管理、部署、備份、稽核與資料生命週期等工程問題。
-
-目前沒有在本 README 宣稱未經量測的準確率、延遲、使用人數或商業成效；正式評估應建立獨立測試集與可重現基準。
+如於面試中需要深入說明，我可以使用去識別化架構圖、操作畫面及不含機密的程式片段，說明設計取捨與實作方式。
