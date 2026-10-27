@@ -70,9 +70,13 @@ flowchart LR
 
 ![Knowledge Hub 登入畫面](docs/images/01-login.jpg)
 
+<br>
+
 AD／LDAP 為選擇性啟用。
 
 ![本地帳號與 AD LDAP 管理](docs/images/02-account-and-ldap.jpg)
+
+<br>
 
 ### 2. 文件處理與寫入前確認
 
@@ -82,6 +86,8 @@ AD／LDAP 為選擇性啟用。
 
 ![匯入資料欄位對應與預覽](docs/images/04-import-preview.jpg)
 
+<br>
+
 ### 3. 模型與檢索設定
 
 各問答專區可獨立設定是否使用 LLM 生成回答；檢索流程支援語意搜尋、BM25、候選融合與 Reranker，並保留最終候選供使用者查證。
@@ -90,27 +96,39 @@ AD／LDAP 為選擇性啟用。
 
 ![Hybrid Retrieval 與 Reranker 設定](docs/images/06-hybrid-retrieval.jpg)
 
+<br>
+
 ### 4. 可追溯問答與三階段改善
 
 使用者可以展開檢視匹配文本、來源與相似度。當反饋無幫助時，系統依序執行問題改寫與推薦已確認相關問題；第三階段仍無法處理的問題，會交由管理者治理。
 
 ![回答來源、Top 5 與使用者回饋](docs/images/07-rag-result.jpg)
 
+<br>
+
 AI 改寫提問效果展示。
 
 ![LLM 改寫問題並重新檢索](docs/images/08-query-rewrite.jpg)
+
+<br>
 
 列出已確認相關問題，供使用者自行點閱。
 
 ![已確認相關問題建議](docs/images/09-related-questions.jpg)
 
+<br>
+
 未解決問題可由管理者人工維護。
 
 ![未解決問題人工處理](docs/images/10-unresolved-questions.jpg)
 
+<br>
+
 紀錄使用狀況與統計結果。
 
 ![問答分析儀表板與紀錄](docs/images/11-qa-analytics.jpg)
+
+<br>
 
 ### 5. AI 引導與指定執行自動化
 
@@ -120,9 +138,13 @@ AI 只會依據使用者擁有權限，且已開放的自動化清單提出建�
 
 ![AI 推薦並引導執行訂單資料匯出](docs/images/12-ai-guided-automation.jpg)
 
+<br>
+
 自動化亦支援檔案輸入，使用者可上傳程式所需的檔案後執行處理。下圖以 Excel 為例，將前一步產出的訂單資料交給下一支分析程式，展示檔案在不同自動化之間的傳遞與加工流程。
 
 ![指定自動化、上傳檔案與產出統計結果](docs/images/13-file-automation.jpg)
+
+<br>
 
 ### 6. 自動化執行紀錄
 
@@ -130,7 +152,7 @@ AI 只會依據使用者擁有權限，且已開放的自動化清單提出建�
 
 ![自動化執行紀錄](docs/images/14-automation-logs.jpg)
 
-## 高階系統架構
+## 系統架構
 
 ```mermaid
 flowchart LR
