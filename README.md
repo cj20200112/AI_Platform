@@ -156,21 +156,23 @@ AI 只會依據使用者擁有權限，且已開放的自動化清單提出建�
 
 ```mermaid
 flowchart LR
-    U[使用者 / 管理員] --> WEB[Web Platform]
-    WEB --> AUTH[Identity & Access Control]
-    WEB --> DATA[Document Processing]
+    U[Web Platform] --> WEB[Identity & Access Control]
+
+    WEB --> DATA[(Knowledge Base)]
     WEB --> AUTO[Automation Engine]
 
-    DATA --> KB[(Knowledge Base)]
+    DATA --> KB[Document Processing]
     KB --> RETRIEVE[Hybrid Retrieval & Reranking]
     RETRIEVE --> LLM[LLM Response Layer]
-    LLM --> WEB
 
     AUTO --> SAFE[Controlled Execution Flow]
     SAFE --> RESULT[Downloadable Results & Audit Log]
 ```
 
-架構刻意將 LLM 與最終系統動作分離：模型協助理解、改寫與生成文字，權限判斷、知識關聯及自動化執行則由後端規則控制。
+平台功能皆經過身分驗證與權限控管，再分流至知識問答或作業自動化。
+文件寫入知識庫後，由 Hybrid Retrieval 與 Reranker 找出相關內容，再交由 LLM 回答層處理；
+自動化則透過獨立的邏輯執行流程運作，並保留輸出結果與執行紀錄。
+LLM 主要負責自然語言理解、問題改寫、文字生成與自動化推薦，程式執行、權限判斷及知識關聯仍由平台邏輯處理。
 
 ## 個人主要實務經驗
 
